@@ -145,9 +145,11 @@ docs/build/
 *.backup
 *~
 
-# Core dumps
-core
-core.*
+# Core dumps (only at root and common locations)
+/core
+*.core
+core.* 
+vgcore.*
 
 # Clang tools
 .clang-tidy
