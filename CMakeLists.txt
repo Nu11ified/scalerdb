@@ -61,6 +61,23 @@ target_include_directories(scalerdb
     ${thread-pool_SOURCE_DIR}/include
 )
 
+# Add core data model tests
+add_executable(
+    test_core_data_model
+    tests/test_core_data_model.cpp
+)
+
+target_link_libraries(
+    test_core_data_model
+    GTest::gtest_main
+    nlohmann_json::nlohmann_json
+)
+
+target_include_directories(test_core_data_model 
+    PRIVATE 
+    ${thread-pool_SOURCE_DIR}/include
+)
+
 # Add example test executable to verify everything works
 add_executable(
     test_setup
@@ -80,4 +97,5 @@ target_include_directories(test_setup
 
 # Discover tests
 include(GoogleTest)
+gtest_discover_tests(test_core_data_model)
 gtest_discover_tests(test_setup) 

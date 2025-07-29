@@ -5,10 +5,53 @@ A modern C++23 database project with efficient serialization and multi-threading
 ## Features
 
 - **C++23 Standard**: Leverages the latest C++ features and improvements
-- **JSON Serialization**: Uses nlohmann/json for fast and reliable data serialization (msgpack can be added later)
+- **Core In-Memory Database**: Complete CRUD operations with primary key indexing
+- **Type-Safe Value System**: std::variant-based value container supporting multiple data types
+- **Schema Validation**: Column constraints and type checking
+- **JSON Serialization**: Uses nlohmann/json for fast and reliable data serialization
 - **Thread Pool**: Integrated BS::thread_pool for efficient concurrent operations
-- **Testing**: GoogleTest framework for comprehensive unit testing
+- **Comprehensive Testing**: GoogleTest framework with 21 unit tests covering all CRUD operations
 - **CMake Build System**: Modern CMake setup with automatic dependency management
+
+## Core Data Model
+
+### Architecture Overview
+
+ScalerDB implements a layered architecture:
+
+1. **Value**: Type-safe container using `std::variant` for database values
+2. **Column**: Schema definition with metadata and validation constraints  
+3. **Row**: Collection of values with efficient access by index and name
+4. **Table**: In-memory storage with CRUD operations and primary key indexing
+5. **Database**: Top-level container managing multiple tables
+
+### Key Classes
+
+- `scalerdb::Value` - Supports null, bool, int32, int64, double, and string types
+- `scalerdb::Column` - Column metadata with validation constraints
+- `scalerdb::Row` - Database row with schema-aware value access
+- `scalerdb::Table` - Table with primary key indexing and CRUD operations
+- `scalerdb::Database` - Database container with table management
+
+### CRUD Operations
+
+```cpp
+// Create database and table
+Database db("my_db");
+auto* table = db.createTable("users", schema, "id");
+
+// INSERT
+table->insertRow({Value(1), Value("Alice"), Value(28)});
+
+// SELECT
+const Row* row = table->findRowByPK(Value(1));
+
+// UPDATE  
+table->updateRow(Value(1), {Value(1), Value("Alice Smith"), Value(29)});
+
+// DELETE
+table->deleteRow(Value(1));
+```
 
 ## Dependencies
 
@@ -91,16 +134,25 @@ Examples:
 
 ```
 scalerdb/
+├── src/core/           # Core database engine
+│   ├── value.hpp       # Type-safe value container
+│   ├── column.hpp      # Column schema and validation
+│   ├── row.hpp         # Database row implementation
+│   ├── table.hpp       # Table with CRUD operations
+│   └── database.hpp    # Database management
+├── tests/              # Test suites
+│   └── test_core_data_model.cpp # Comprehensive CRUD tests
 ├── CMakeLists.txt      # CMake configuration
-├── main.cpp            # Main application entry point
-├── test_setup.cpp      # Test suite for verifying setup
+├── main.cpp            # Example application demonstrating core features
+├── test_setup.cpp      # Basic setup verification tests
 ├── setup.sh            # Environment setup script
 ├── make.sh             # Build script
 ├── README.md           # This file
 ├── .gitignore          # Git ignore rules
 └── build/              # Build artifacts (auto-generated)
-    ├── scalerdb        # Main executable
-    └── test_setup      # Test executable
+    ├── scalerdb            # Main executable
+    ├── test_setup          # Setup tests
+    └── test_core_data_model # Core database tests
 ```
 
 ## Development
@@ -116,13 +168,34 @@ scalerdb/
 
 To add new dependencies, modify the `FetchContent_Declare` sections in `CMakeLists.txt`. The build system will automatically download and configure them.
 
+## Development Status
+
+✅ **Phase 1 Complete - Core In-Memory Data Model:**
+- **Value System**: Type-safe container using `std::variant` supporting null, bool, int32, int64, double, string
+- **Schema Definition**: Column class with metadata, constraints, and validation
+- **Row Management**: Efficient data access by index and column name
+- **Table Operations**: Complete CRUD with primary key indexing and unique constraints
+- **Database Management**: Multi-table container with statistics and querying
+- **Test Coverage**: 21 comprehensive unit tests covering all CRUD operations
+- **Performance**: O(1) primary key lookups, O(n) sequential scans
+
 ### Future Enhancements
 
-- [ ] Add MessagePack support for more efficient serialization
-- [ ] Implement database storage backend
-- [ ] Add network interface
+**Phase 2 - Persistence & Serialization:**
+- [ ] Add MessagePack support for efficient binary serialization
+- [ ] Implement WAL (Write-Ahead Logging) for durability
+- [ ] File-based storage backend with crash recovery
+
+**Phase 3 - Query Engine:**
+- [ ] SQL-like query language parser
+- [ ] Query optimizer and execution engine
+- [ ] Secondary indexes (B-tree, hash indexes)
+
+**Phase 4 - Advanced Features:**
+- [ ] Network interface (TCP/UDP protocols)
+- [ ] Concurrent access control (MVCC or locking)
 - [ ] Performance benchmarking suite
-- [ ] Documentation generation
+- [ ] Clustering and replication
 
 ## Troubleshooting
 
