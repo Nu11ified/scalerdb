@@ -27,8 +27,10 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-# Use nlohmann/json for now (simpler than msgpack with no dependencies)
-# We can switch to msgpack later if needed
+# Note: msgpack-c requires Boost, using nlohmann/json with msgpack-compatible structure
+# This implementation can be easily migrated to actual msgpack once dependencies are resolved
+
+# nlohmann/json for JSON support alongside msgpack
 FetchContent_Declare(
   nlohmann_json
   GIT_REPOSITORY https://github.com/nlohmann/json.git
@@ -48,7 +50,10 @@ FetchContent_MakeAvailable(thread-pool)
 enable_testing()
 
 # Create main executable
-add_executable(scalerdb main.cpp)
+add_executable(scalerdb 
+    main.cpp
+    src/core/database.cpp
+)
 
 # Link libraries and include directories
 target_link_libraries(scalerdb 
@@ -59,12 +64,14 @@ target_link_libraries(scalerdb
 target_include_directories(scalerdb 
     PRIVATE 
     ${thread-pool_SOURCE_DIR}/include
+    src
 )
 
 # Add core data model tests
 add_executable(
     test_core_data_model
     tests/test_core_data_model.cpp
+    src/core/database.cpp
 )
 
 target_link_libraries(
@@ -76,6 +83,7 @@ target_link_libraries(
 target_include_directories(test_core_data_model 
     PRIVATE 
     ${thread-pool_SOURCE_DIR}/include
+    src
 )
 
 # Add example test executable to verify everything works
@@ -93,9 +101,30 @@ target_link_libraries(
 target_include_directories(test_setup 
     PRIVATE 
     ${thread-pool_SOURCE_DIR}/include
+    src
+)
+
+# Add serialization tests
+add_executable(
+    test_serialization
+    tests/test_serialization.cpp
+    src/core/database.cpp
+)
+
+target_link_libraries(
+    test_serialization
+    GTest::gtest_main
+    nlohmann_json::nlohmann_json
+)
+
+target_include_directories(test_serialization 
+    PRIVATE 
+    ${thread-pool_SOURCE_DIR}/include
+    src
 )
 
 # Discover tests
 include(GoogleTest)
 gtest_discover_tests(test_core_data_model)
-gtest_discover_tests(test_setup) 
+gtest_discover_tests(test_setup)
+gtest_discover_tests(test_serialization) 

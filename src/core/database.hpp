@@ -8,6 +8,8 @@
 #include <memory>
 #include <vector>
 #include <stdexcept>
+#include <fstream>
+#include <iostream>
 
 namespace scalerdb {
 
@@ -224,6 +226,29 @@ public:
         
         return results;
     }
+
+    /**
+     * @brief Save the entire database to a file using MessagePack serialization
+     * @param filename Path to the file to save to
+     * @return true if save succeeded, false otherwise
+     */
+    bool save(const std::string& filename) const;
+
+    /**
+     * @brief Load a database from a file using MessagePack deserialization
+     * @param filename Path to the file to load from
+     * @return true if load succeeded, false otherwise
+     * 
+     * Note: This will clear the current database content and replace it
+     * with the loaded data. Constraint validators will need to be re-added
+     * after loading as std::function objects cannot be serialized.
+     */
+    bool load(const std::string& filename);
+
+    /**
+     * @brief Create a new Database with default empty name
+     */
+    Database() : name_("default") {}
 
     /**
      * @brief Iterator support for range-based loops
