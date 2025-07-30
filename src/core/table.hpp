@@ -78,6 +78,26 @@ public:
      */
     Table(std::string name, std::vector<Column> schema, const std::string& primary_key_column_name)
         : name_(std::move(name)), schema_(std::move(schema)), next_row_id_(1) {
+        initializeTable(primary_key_column_name);
+    }
+    
+    /**
+     * @brief Construct a new Table with capacity hint for performance
+     * @param name Table name
+     * @param schema Vector of columns defining the table structure
+     * @param primary_key_column_name Name of the primary key column
+     * @param expected_rows Expected number of rows (for memory pre-allocation)
+     */
+    Table(std::string name, std::vector<Column> schema, const std::string& primary_key_column_name, size_t expected_rows)
+        : name_(std::move(name)), schema_(std::move(schema)), next_row_id_(1) {
+        // Pre-allocate memory for better performance
+        rows_.reserve(expected_rows);
+        primary_key_index_.reserve(expected_rows);
+        initializeTable(primary_key_column_name);
+    }
+
+private:
+    void initializeTable(const std::string& primary_key_column_name) {
         
         if (schema_.empty()) {
             throw std::invalid_argument("Table must have at least one column");
@@ -105,6 +125,7 @@ public:
         }
     }
 
+public:
     // Disable copy and move constructors and assignment operators due to shared_mutex
     Table(const Table&) = delete;
     Table& operator=(const Table&) = delete;
