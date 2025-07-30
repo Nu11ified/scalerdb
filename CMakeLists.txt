@@ -38,13 +38,8 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(nlohmann_json)
 
-# Thread pool library (using a simple header-only one)
-FetchContent_Declare(
-  thread-pool
-  GIT_REPOSITORY https://github.com/bshoshany/thread-pool.git
-  GIT_TAG master
-)
-FetchContent_MakeAvailable(thread-pool)
+# Threading support for our custom ThreadPool implementation
+find_package(Threads REQUIRED)
 
 # Enable testing
 enable_testing()
@@ -59,11 +54,11 @@ add_executable(scalerdb
 target_link_libraries(scalerdb 
     PRIVATE 
     nlohmann_json::nlohmann_json
+    Threads::Threads
 )
 
 target_include_directories(scalerdb 
     PRIVATE 
-    ${thread-pool_SOURCE_DIR}/include
     src
 )
 
@@ -78,11 +73,11 @@ target_link_libraries(
     test_core_data_model
     GTest::gtest_main
     nlohmann_json::nlohmann_json
+    Threads::Threads
 )
 
 target_include_directories(test_core_data_model 
     PRIVATE 
-    ${thread-pool_SOURCE_DIR}/include
     src
 )
 
@@ -96,11 +91,11 @@ target_link_libraries(
     test_setup
     GTest::gtest_main
     nlohmann_json::nlohmann_json
+    Threads::Threads
 )
 
 target_include_directories(test_setup 
     PRIVATE 
-    ${thread-pool_SOURCE_DIR}/include
     src
 )
 
@@ -115,11 +110,67 @@ target_link_libraries(
     test_serialization
     GTest::gtest_main
     nlohmann_json::nlohmann_json
+    Threads::Threads
 )
 
 target_include_directories(test_serialization 
     PRIVATE 
-    ${thread-pool_SOURCE_DIR}/include
+    src
+)
+
+# Add threading tests
+add_executable(
+    test_threading
+    tests/test_threading.cpp
+    src/core/database.cpp
+)
+
+target_link_libraries(
+    test_threading
+    GTest::gtest_main
+    nlohmann_json::nlohmann_json
+    Threads::Threads
+)
+
+target_include_directories(test_threading 
+    PRIVATE 
+    src
+)
+
+# Add persistence demo
+add_executable(
+    demo_persistence
+    demo_persistence.cpp
+    src/core/database.cpp
+)
+
+target_link_libraries(
+    demo_persistence
+    nlohmann_json::nlohmann_json
+    Threads::Threads
+)
+
+target_include_directories(demo_persistence 
+    PRIVATE 
+    src
+)
+
+# Add performance tests
+add_executable(
+    test_performance
+    tests/test_performance.cpp
+    src/core/database.cpp
+)
+
+target_link_libraries(
+    test_performance
+    GTest::gtest_main
+    nlohmann_json::nlohmann_json
+    Threads::Threads
+)
+
+target_include_directories(test_performance 
+    PRIVATE 
     src
 )
 
@@ -127,4 +178,6 @@ target_include_directories(test_serialization
 include(GoogleTest)
 gtest_discover_tests(test_core_data_model)
 gtest_discover_tests(test_setup)
-gtest_discover_tests(test_serialization) 
+gtest_discover_tests(test_serialization)
+gtest_discover_tests(test_threading)
+gtest_discover_tests(test_performance) 

@@ -1,6 +1,6 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
-#include "BS_thread_pool.hpp"
+#include "src/core/threadpool.hpp"
 #include "src/core/database.hpp"
 
 using namespace scalerdb;
@@ -89,10 +89,10 @@ int main() {
         
         // Test thread pool
         std::cout << "\nTesting thread pool:\n";
-        BS::thread_pool pool(2);
-        std::cout << "  • Thread pool initialized with " << pool.get_thread_count() << " threads\n";
+        scalerdb::ThreadPool pool(2);
+        std::cout << "  • Thread pool initialized with " << pool.getThreadCount() << " threads\n";
         
-        auto future = pool.submit_task([]() {
+        auto future = pool.submit([]() {
             return std::string("Background task completed!");
         });
         std::cout << "  • " << future.get() << "\n";

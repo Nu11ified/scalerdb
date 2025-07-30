@@ -180,8 +180,8 @@ struct SerializableTable {
         }
     }
     
-    // Convert back to Table
-    Table toTable() const {
+    // Convert back to Table by creating it in the provided database
+    Table* createTableInDatabase(Database& database) const {
         // Reconstruct column schema
         std::vector<Column> table_columns;
         table_columns.reserve(columns.size());
@@ -190,12 +190,12 @@ struct SerializableTable {
         }
         
         // Create table with schema
-        Table table(name, std::move(table_columns), primary_key_column);
+        Table* table = database.createTable(name, std::move(table_columns), primary_key_column);
         
         // Add all rows
         for (const auto& row : rows) {
-            Row reconstructed_row = row.toRow(table.getSchema());
-            table.insertRow(std::move(reconstructed_row));
+            Row reconstructed_row = row.toRow(table->getSchema());
+            table->insertRow(std::move(reconstructed_row));
         }
         
         return table;
@@ -230,21 +230,8 @@ struct SerializableDatabase {
         Database database;
         
         for (const auto& serializable_table : tables) {
-            Table table = serializable_table.toTable();
-            // Use the Table move constructor by moving into database
-            std::string table_name = table.getName();
-            std::vector<Column> schema = table.getSchema();
-            std::string pk_column = table.getPrimaryKeyColumnName();
-            
-            // Create new table in database
-            auto* new_table = database.createTable(table_name, std::move(schema), pk_column);
-            
-            // Copy rows from the deserialized table
-            size_t row_count = table.getRowCount();
-            for (size_t i = 0; i < row_count; ++i) {
-                Row row = table.getRow(i);
-                new_table->insertRow(std::move(row));
-            }
+            // Create table directly in the database (this also loads all the rows)
+            serializable_table.createTableInDatabase(database);
         }
         
         return database;

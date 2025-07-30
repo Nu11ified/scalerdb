@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
-#include "BS_thread_pool.hpp"
+#include "src/core/threadpool.hpp"
 #include <vector>
 
 // Test JSON serialization (will replace with msgpack later if needed)
@@ -22,12 +22,12 @@ TEST(SetupTest, JsonBasic) {
 
 // Test thread pool functionality
 TEST(SetupTest, ThreadPoolBasic) {
-    BS::thread_pool pool(2);
+    scalerdb::ThreadPool pool(2);
     
-    EXPECT_EQ(pool.get_thread_count(), 2);
+    EXPECT_EQ(pool.getThreadCount(), 2);
     
     // Test basic task submission
-    auto future = pool.submit_task([]() {
+    auto future = pool.submit([]() {
         return 42;
     });
     

@@ -10,6 +10,7 @@
 #include <optional>
 #include <functional>
 #include <stdexcept>
+#include <shared_mutex>
 
 namespace scalerdb {
 
@@ -18,7 +19,7 @@ namespace scalerdb {
  * 
  * This class provides efficient CRUD operations with primary key indexing.
  * Rows are stored in a vector for sequential access, and a hash map provides
- * fast primary key lookups.
+ * fast primary key lookups. Thread-safe with per-table read-write locking.
  */
 class Table {
 private:
@@ -28,6 +29,7 @@ private:
     std::unordered_map<std::string, size_t> primary_key_index_; // PK value -> row index
     size_t primary_key_column_; // Index of the primary key column
     size_t next_row_id_; // For auto-incrementing IDs if needed
+    mutable std::shared_mutex table_mutex_; // Per-table read-write lock
 
     /**
      * @brief Get the primary key value from a row as a string
@@ -103,22 +105,36 @@ public:
         }
     }
 
+    // Disable copy and move constructors and assignment operators due to shared_mutex
+    Table(const Table&) = delete;
+    Table& operator=(const Table&) = delete;
+    Table(Table&&) = delete;
+    Table& operator=(Table&&) = delete;
+
     // Getters
     const std::string& getName() const { return name_; }
     const std::vector<Column>& getSchema() const { return schema_; }
-    size_t getRowCount() const { return rows_.size(); }
-    bool isEmpty() const { return rows_.empty(); }
+    size_t getRowCount() const { 
+        std::shared_lock<std::shared_mutex> lock(table_mutex_);
+        return rows_.size(); 
+    }
+    bool isEmpty() const { 
+        std::shared_lock<std::shared_mutex> lock(table_mutex_);
+        return rows_.empty(); 
+    }
     
     const std::string& getPrimaryKeyColumnName() const { 
         return schema_[primary_key_column_].getName(); 
     }
 
     /**
-     * @brief Insert a new row into the table
+     * @brief Insert a new row into the table (thread-safe with exclusive lock)
      * @param row Row to insert
      * @return true if insertion was successful
      */
     bool insertRow(Row row) {
+        std::unique_lock<std::shared_mutex> lock(table_mutex_);
+        
         // Set schema for the row if not already set
         row.setSchema(&schema_);
         
@@ -152,7 +168,7 @@ public:
     }
 
     /**
-     * @brief Insert a row using individual values
+     * @brief Insert a row using individual values (thread-safe)
      * @param values Vector of values for the new row
      * @return true if insertion was successful
      */
@@ -162,11 +178,13 @@ public:
     }
 
     /**
-     * @brief Find a row by its primary key
+     * @brief Find a row by its primary key (thread-safe with shared lock)
      * @param primary_key Primary key value to search for
      * @return Pointer to the row if found, nullptr otherwise
      */
     const Row* findRowByPK(const Value& primary_key) const {
+        std::shared_lock<std::shared_mutex> lock(table_mutex_);
+        
         std::string pk_str = primary_key.toString();
         auto it = primary_key_index_.find(pk_str);
         if (it != primary_key_index_.end()) {
@@ -176,11 +194,13 @@ public:
     }
 
     /**
-     * @brief Find a row by its primary key (mutable version)
+     * @brief Find a row by its primary key (mutable version, thread-safe with shared lock)
      * @param primary_key Primary key value to search for
      * @return Pointer to the row if found, nullptr otherwise
      */
     Row* findRowByPK(const Value& primary_key) {
+        std::shared_lock<std::shared_mutex> lock(table_mutex_);
+        
         std::string pk_str = primary_key.toString();
         auto it = primary_key_index_.find(pk_str);
         if (it != primary_key_index_.end()) {
@@ -267,10 +287,11 @@ public:
     }
 
     /**
-     * @brief Get all rows in the table
+     * @brief Get all rows in the table (thread-safe with shared lock)
      * @return Reference to the rows vector
      */
     const std::vector<Row>& getAllRows() const {
+        std::shared_lock<std::shared_mutex> lock(table_mutex_);
         return rows_;
     }
 
